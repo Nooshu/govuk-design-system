@@ -1,0 +1,72 @@
+<script type="module">
+import {Workbox} from 'https://storage.googleapis.com/workbox-cdn/releases/4.2.0/workbox-window.prod.mjs';
+
+if ('serviceWorker' in navigator) {
+    // SW Registration
+    const wb = new Workbox('/service-worker.js')
+    wb.register()
+
+    // cache the offline page when the page loads
+    window.addEventListener('load', () => {
+        caches.open('govuk-ds-saved-pages').then(cache => {
+            cache.match('/offline/index.html').then(response => {
+                if(!response){
+                    cache.add('/offline/index.html')
+                }
+            })
+        })
+    })
+
+    // Check see if the page has already beeen saved
+    caches.match(window.location.href)
+    .then(isPageInCache => {
+        const insertPoint = document.querySelector('div.app-content__header')
+        const offlineButton = document.createElement('button')
+        offlineButton.className = `govuk-button`
+        
+        if(isPageInCache){
+            offlineButton.innerText = `Remove from cache`
+        } else {
+            offlineButton.innerText = `Save for offline reading`
+        }
+
+        if(insertPoint){
+            insertPoint.appendChild(offlineButton)
+
+            offlineButton.addEventListener('click', event => {
+                event.preventDefault()
+                offlineButton.innerText = `One moment please...`
+
+                if(isPageInCache){
+                    caches.open('govuk-ds-saved-pages')
+                    .then(cacheName => {
+                        isPageInCache = false
+                        localStorage.removeItem(window.location.href)
+                        offlineButton.innerText = `Save for offline reading`
+                        return cacheName.delete(window.location.href)
+                    })
+                } else {
+                    caches.open('govuk-ds-saved-pages')
+                    .then(openCache => {
+                        openCache.add(window.location.href)
+                        .then(() => {
+                            const documentData = {
+                                'title': document.querySelector('title').innerText,
+                                'description': document.querySelector('meta[name="description"]').getAttribute('content')
+                            }
+
+                            localStorage.setItem(
+                                window.location.href,
+                                JSON.stringify(documentData)
+                            )
+
+                            offlineButton.innerText = `Page Saved!`
+                            isPageInCache = true
+                        })
+                    })
+                }
+            })
+        }
+    })
+}
+</script>
