@@ -23,7 +23,8 @@ if ('serviceWorker' in navigator) {
         offlineButton.innerText = isPageInCache ? `Remove from cache` : `Save for offline reading`;
 
         if(insertPoint){
-            insertPoint.appendChild(offlineButton)
+            if(window.location.href.includes('/offline/')){return;}
+            insertPoint.prepend(offlineButton)
 
             offlineButton.addEventListener('click', event => {
                 event.preventDefault()
@@ -55,17 +56,22 @@ if ('serviceWorker' in navigator) {
                                 pageIframes = Array.from(pageIframes)
                                     // map over iframs to get their src attributes
                                     .map(iframe => iframe.getAttribute('src'));
+
+                                // create an array of unique values (any duplicates throw a DOMException)
+                                var uniqueUrls = [...new Set(pageIframes)];
                                 
                                 // add the iframes to the cache
-                                openCache.addAll(pageIframes).then(result => {
+                                openCache.addAll(uniqueUrls).then(result => {
                                     return result;
+                                }).catch(error => {
+                                    console.warn(error);
                                 });
                             }
 
                             const documentData = {
                                 'title': document.querySelector('title').innerText,
                                 'description': document.querySelector('meta[name="description"]').getAttribute('content'),
-                                'iframes': pageIframes
+                                'iframes': uniqueUrls
                             }
 
                             localStorage.setItem(

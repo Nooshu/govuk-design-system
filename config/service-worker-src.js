@@ -17,7 +17,7 @@ workbox.core.skipWaiting()
 workbox.core.clientsClaim()
 
 // place holder for any precaching
-workbox.precaching.precacheAndRoute([])
+workbox.precaching.precacheAndRoute([]);
 
 // Use workbox for the handling of static assets
 workbox.routing.registerRoute(
@@ -47,6 +47,7 @@ workbox.routing.registerRoute(
 addEventListener('fetch', fetchEvent =>{
   // store the original request
   const request = fetchEvent.request;
+
   // if the request is from a HTML page
   if (request.headers.get('Accept').includes('text/html')){
     // respond to the request with the code inside
@@ -73,7 +74,7 @@ addEventListener('fetch', fetchEvent =>{
       })
     )
   }
-})
+});
 
 /**
  * Stash in cache as an async function
@@ -86,3 +87,14 @@ async function stashInCache(request, cacheName) {
   // push the response into the cache and return the outcome
   return await openCache.put(request, theRequest);
 }
+
+/**
+ * // check for pathname that doesn't end in a '/' doesn't have a '.' (an extension)
+    if (url.pathname && !url.pathname.endsWith('/') && !url.pathname.includes('.')) {
+      console.warn('Rewriting!', url.pathname)
+      // if so rewrite the path to include slash
+      url['pathname'] = url['pathname'] + '/index.html'
+      return [url]
+    }
+    return []
+ */
