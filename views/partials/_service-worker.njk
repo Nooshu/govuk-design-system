@@ -9,26 +9,18 @@ if ('serviceWorker' in navigator) {
     // cache the offline page when the page loads
     window.addEventListener('load', () => {
         caches.open('govuk-ds-saved-pages').then(cache => {
-            cache.match('/offline/index.html').then(response => {
-                if(!response){
-                    cache.add('/offline/index.html')
-                }
-            })
+            // always add an updated version of the offline page
+            cache.add('/offline/index.html');
         })
-    })
+    });
 
-    // Check see if the page has already beeen saved
+    // Check see if the page has already been saved
     caches.match(window.location.href)
     .then(isPageInCache => {
         const insertPoint = document.querySelector('div.app-content__header')
         const offlineButton = document.createElement('button')
-        offlineButton.className = `govuk-button`
-        
-        if(isPageInCache){
-            offlineButton.innerText = `Remove from cache`
-        } else {
-            offlineButton.innerText = `Save for offline reading`
-        }
+        offlineButton.className = `govuk-button`;
+        offlineButton.innerText = isPageInCache ? `Remove from cache` : `Save for offline reading`;
 
         if(insertPoint){
             insertPoint.appendChild(offlineButton)
@@ -40,19 +32,40 @@ if ('serviceWorker' in navigator) {
                 if(isPageInCache){
                     caches.open('govuk-ds-saved-pages')
                     .then(cacheName => {
-                        isPageInCache = false
+                        isPageInCache = false;
+                        let iframeArray = JSON.parse(localStorage.getItem(window.location.href)).iframes;
                         localStorage.removeItem(window.location.href)
                         offlineButton.innerText = `Save for offline reading`
                         return cacheName.delete(window.location.href)
+                            .then(() => {
+                                return Promise.all(iframeArray.map(iframe => {
+                                    return cacheName.delete(iframe);
+                                }))
+                            });
                     })
                 } else {
                     caches.open('govuk-ds-saved-pages')
                     .then(openCache => {
                         openCache.add(window.location.href)
                         .then(() => {
+                            let pageIframes = document.getElementsByTagName('iframe');
+                            // check see if we have iframes on the page
+                            if(pageIframes.length){
+                                // convert to a real array
+                                pageIframes = Array.from(pageIframes)
+                                    // map over iframs to get their src attributes
+                                    .map(iframe => iframe.getAttribute('src'));
+                                
+                                // add the iframes to the cache
+                                openCache.addAll(pageIframes).then(result => {
+                                    return result;
+                                });
+                            }
+
                             const documentData = {
                                 'title': document.querySelector('title').innerText,
-                                'description': document.querySelector('meta[name="description"]').getAttribute('content')
+                                'description': document.querySelector('meta[name="description"]').getAttribute('content'),
+                                'iframes': pageIframes
                             }
 
                             localStorage.setItem(

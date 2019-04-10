@@ -3,5 +3,35 @@ title: Offline page
 description: Design your service using GOV.UK styles, components and patterns
 ---
 
-<h1>Offline page</h1>
-<p>This is a test</p>
+<h1>You are currently offline</h1>
+<p>Here are a list of pages you have saved for offline viewing:</p>
+<ul id="offline-list"></ul>
+
+<script type="module">
+// basic SW check
+if(navigator.serviceWorker){
+    const savedPageCache = 'govuk-ds-saved-pages';
+
+    caches.open(savedPageCache)
+    .then(cacheResponse => {
+        // extract the keys from the cache
+        cacheResponse.keys()
+        .then(keys => {
+            // start with empty markup
+            let markup = '';
+
+            keys.forEach( request => {
+                console.log(request);
+                // Grab the stored data from local storage
+                const data = JSON.parse(localStorage.getItem(request.url));
+                if(data){
+                    // build the list
+                    markup += `<li><h3><a href="${request.url}">${data.title}</a></h3><p>${data.description}</p></li>`;
+                }
+            });
+
+            document.getElementById('offline-list').innerHTML = markup;
+        })
+    });
+}
+</script>
