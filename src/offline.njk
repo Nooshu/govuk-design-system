@@ -27,11 +27,10 @@ if(navigator.serviceWorker){
 
             keys.forEach( request => {
                 // Grab the stored data from local storage
-                const data = JSON.parse(localStorage.getItem(request.url));
-                if(data){
-                    // build the list
-                    markup += `<li><a href="${request.url}">${data.title}</a><p>${data.description}</p></li>`;
-                }
+                //const data = JSON.parse(localStorage.getItem(request.url));
+
+                // build the list
+                markup += `<li><a href="${request.url}">${request.url}</a><p>${request.url}</p></li>`;
             });
 
             document.getElementById('offline-list').innerHTML = markup;

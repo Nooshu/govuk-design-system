@@ -17,7 +17,7 @@ workbox.core.skipWaiting()
 workbox.core.clientsClaim()
 
 // place holder for any precaching
-workbox.precaching.precacheAndRoute([]);
+workbox.precaching.precacheAndRoute([],{});
 
 // Use workbox for the handling of static assets
 workbox.routing.registerRoute(
@@ -25,7 +25,7 @@ workbox.routing.registerRoute(
   new workbox.strategies.StaleWhileRevalidate({
     cacheName: 'govuk-ds-static-resources',
   })
-)
+);
 
 // Use workbox for the handling of image assets
 workbox.routing.registerRoute(
@@ -43,50 +43,26 @@ workbox.routing.registerRoute(
   })
 );
 
-// custom HTML handling code
-addEventListener('fetch', fetchEvent =>{
-  // store the original request
-  const request = fetchEvent.request;
-
-  // if the request is from a HTML page
-  if (request.headers.get('Accept').includes('text/html')){
-    // respond to the request with the code inside
-    fetchEvent.respondWith(
-      // look for the HTML in ANY of the caches
-      caches.match(request)
-      .then(cacheResponse => {
-        // if we have a cached version of the page
-        if (cacheResponse){
-          // try to update the cached version from the network
-          fetchEvent.waitUntil(
-            stashInCache(request, savedPageCache)
-          );
-          // whatever happens, return the cached version
-          return cacheResponse;
-        }
-
-        // no cached version, so use the network
-        return fetch(request)
-        // no network so serve the offline page
-        .catch(error => {
-          return caches.match(offlinePage)
-        })
-      })
-    )
+// Use workbox for the handling of html assets
+// last 20 will be stored
+workbox.routing.registerRoute(
+  ({ event }) => event.request.destination === 'document',
+  async ({ event }) => {
+    try {
+      return await new workbox.strategies.StaleWhileRevalidate({
+        cacheName: savedPageCache,
+        plugins: [
+          new workbox.expiration.Plugin({
+            // Only cache 20 requests.
+            maxEntries: 20
+          })
+        ]
+      }).handle({ event });
+    } catch (error) {
+      return caches.match(offlinePage);
+    }
   }
-});
-
-/**
- * Stash in cache as an async function
- */
-async function stashInCache(request, cacheName) {
-  // grab the request from the network
-  const theRequest = await fetch(request);
-  // open the cache
-  const openCache = await caches.open(cacheName);
-  // push the response into the cache and return the outcome
-  return await openCache.put(request, theRequest);
-}
+);
 
 /**
  * // check for pathname that doesn't end in a '/' doesn't have a '.' (an extension)
