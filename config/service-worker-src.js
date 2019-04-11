@@ -37,7 +37,7 @@ workbox.routing.registerRoute(
         // cache requests for 30 days
         maxAgeSeconds: 30 * 24 * 60 * 60,
         // Only cache 20 requests.
-        maxEntries: 20
+        maxEntries: 40
       })
     ]
   })
@@ -54,7 +54,7 @@ workbox.routing.registerRoute(
         plugins: [
           new workbox.expiration.Plugin({
             // Only cache 20 requests.
-            maxEntries: 20
+            maxEntries: 40
           })
         ]
       }).handle({ event });
@@ -63,14 +63,3 @@ workbox.routing.registerRoute(
     }
   }
 );
-
-/**
- * // check for pathname that doesn't end in a '/' doesn't have a '.' (an extension)
-    if (url.pathname && !url.pathname.endsWith('/') && !url.pathname.includes('.')) {
-      console.warn('Rewriting!', url.pathname)
-      // if so rewrite the path to include slash
-      url['pathname'] = url['pathname'] + '/index.html'
-      return [url]
-    }
-    return []
- */
