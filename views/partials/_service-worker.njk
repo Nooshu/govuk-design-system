@@ -1,15 +1,43 @@
 <script type="module">
-import {Workbox} from 'https://storage.googleapis.com/workbox-cdn/releases/4.2.0/workbox-window.prod.mjs';
-
 if ('serviceWorker' in navigator) {
-    // cache the offline page when the page loads
     window.addEventListener('load', () => {
+        // register the worker
         navigator.serviceWorker.register('/service-worker.js');
 
+        // cache the offline page when the page loads
         caches.open('govuk-ds-saved-pages').then(cache => {
             // always add an updated version of the offline page
             cache.add('/offline/index.html');
         });
+
+        // gather page data for the offline page if required
+        const documentData = {
+            'title': document.querySelector('title').innerText,
+            'description': document.querySelector('meta[name="description"]').getAttribute('content')
+        }
+        // store the page data in localStorage for the offline page
+        if(!document.querySelector('title').innerText.toLowerCase().includes('offline')){
+            localStorage.setItem(
+                window.location.href,
+                JSON.stringify(documentData)
+            )
+        }
     });
+
+    // stop the localstorage getting too big
+    function trimLocalStorage(length){
+        // check see if storage is too big
+        if(localStorage.length > length){
+            // remove the oldest item
+            localStorage.removeItem(localStorage.key(0));
+            // recursivly run the function again if required
+            return trimLocalStorage(length);
+        }
+        // storage now the correct length, return
+        return;
+    }
+
+    // trim localstorage to the number of pages we want to store
+    trimLocalStorage(40);
 }
 </script>
