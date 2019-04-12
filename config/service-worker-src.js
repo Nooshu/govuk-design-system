@@ -1,6 +1,9 @@
 // Import from the CDN
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/4.2.0/workbox-sw.js');
 
+// explicitly load the workbox modules being used
+workbox.loadModule('workbox-cacheable-response');
+
 const savedPageCache = 'govuk-ds-saved-pages';
 const offlinePage = '/offline/index.html';
 
@@ -13,8 +16,8 @@ workbox.core.setCacheNameDetails({
 });
 
 // modify SW update cycle
-workbox.core.skipWaiting()
-workbox.core.clientsClaim()
+workbox.core.skipWaiting();
+workbox.core.clientsClaim();
 
 // place holder for any precaching
 workbox.precaching.precacheAndRoute([],{});
@@ -44,7 +47,7 @@ workbox.routing.registerRoute(
 );
 
 // Use workbox for the handling of html assets
-// last 20 will be stored
+// last 40 will be stored
 workbox.routing.registerRoute(
   ({ event }) => event.request.destination === 'document',
   async ({ event }) => {
@@ -52,6 +55,9 @@ workbox.routing.registerRoute(
       return await new workbox.strategies.StaleWhileRevalidate({
         cacheName: savedPageCache,
         plugins: [
+          new workbox.cacheableResponse.Plugin({
+            statuses: [200]
+          }),
           new workbox.expiration.Plugin({
             // Only cache 20 requests.
             maxEntries: 40
@@ -59,6 +65,7 @@ workbox.routing.registerRoute(
         ]
       }).handle({ event });
     } catch (error) {
+      console.error(error);
       return caches.match(offlinePage);
     }
   }

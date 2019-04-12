@@ -15,8 +15,8 @@ if ('serviceWorker' in navigator) {
             'title': document.querySelector('title').innerText,
             'description': document.querySelector('meta[name="description"]').getAttribute('content')
         }
-        // store the page data in localStorage for the offline page
-        if(!document.querySelector('title').innerText.toLowerCase().includes('offline')){
+        // store the page data in localStorage for use on the offline page
+        if(navigator.onLine){
             localStorage.setItem(
                 window.location.href,
                 JSON.stringify(documentData)
