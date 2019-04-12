@@ -5,6 +5,6 @@ module.exports = {
   swSrc: `${paths.config}service-worker-src.js`,
   swDest: `${paths.public}service-worker.js`,
   globDirectory: paths.public,
-  globPatterns: [],
-  maximumFileSizeToCacheInBytes: 1 * 1024 * 1024
+  globPatterns: ['**/*.{html,png,jpg,json}'],
+  maximumFileSizeToCacheInBytes: 5 * 1024 * 100 // 500KB limit
 }

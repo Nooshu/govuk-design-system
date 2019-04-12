@@ -4,9 +4,6 @@ importScripts('https://storage.googleapis.com/workbox-cdn/releases/4.2.0/workbox
 // explicitly load the workbox modules being used
 workbox.loadModule('workbox-cacheable-response');
 
-const savedPageCache = 'govuk-ds-saved-pages';
-const offlinePage = '/offline/index.html';
-
 // set some cache defaults
 workbox.core.setCacheNameDetails({
   prefix: 'govuk-ds',
@@ -20,7 +17,19 @@ workbox.core.skipWaiting();
 workbox.core.clientsClaim();
 
 // place holder for any precaching
-workbox.precaching.precacheAndRoute([],{});
+workbox.precaching.precacheAndRoute([], {
+  cleanUrls: false,
+  urlManipulation: ({ url }) => {
+    // check for pathname that doesn't end in a '/' doesn't have a '.' (an extension)
+    if (url.pathname && !url.pathname.endsWith('/') && !url.pathname.includes('.')) {
+      console.warn('Rewriting!', url.pathname)
+      // if so rewrite the path to include slash
+      url['pathname'] = url['pathname'] + '/index.html'
+      return [url]
+    }
+    return []
+  }
+});
 
 // Use workbox for the handling of static assets
 workbox.routing.registerRoute(
@@ -30,43 +39,32 @@ workbox.routing.registerRoute(
   })
 );
 
-// Use workbox for the handling of image assets
-workbox.routing.registerRoute(
-  /\.(?:jpg|jpeg|gif|png|ico|svg)$/,
-  new workbox.strategies.StaleWhileRevalidate({
-    cacheName: 'govuk-ds-image-resources',
-    plugins: [
-      new workbox.expiration.Plugin({
-        // cache requests for 30 days
-        maxAgeSeconds: 30 * 24 * 60 * 60,
-        // Only cache 20 requests.
-        maxEntries: 40
-      })
-    ]
-  })
-);
+// Use workbox for the handling of search results
+// workbox.routing.registerRoute(
+//   /\.(?:json)$/,
+//   new workbox.strategies.CacheFirst({
+//     cacheName: 'govuk-ds-search-resources',
+//     plugins: [
+//       new workbox.expiration.Plugin({
+//         // cache requests for 30 days
+//         maxAgeSeconds: 30 * 24 * 60 * 60,
+//       })
+//     ]
+//   })
+// );
 
-// Use workbox for the handling of html assets
-// last 40 will be stored
-workbox.routing.registerRoute(
-  ({ event }) => event.request.destination === 'document',
-  async ({ event }) => {
-    try {
-      return await new workbox.strategies.StaleWhileRevalidate({
-        cacheName: savedPageCache,
-        plugins: [
-          new workbox.cacheableResponse.Plugin({
-            statuses: [200]
-          }),
-          new workbox.expiration.Plugin({
-            // Only cache 20 requests.
-            maxEntries: 40
-          })
-        ]
-      }).handle({ event });
-    } catch (error) {
-      console.error(error);
-      return caches.match(offlinePage);
-    }
-  }
-);
+// Use workbox for the handling of image assets
+// workbox.routing.registerRoute(
+//   /\.(?:jpg|jpeg|gif|png|ico|svg)$/,
+//   new workbox.strategies.StaleWhileRevalidate({
+//     cacheName: 'govuk-ds-image-resources',
+//     plugins: [
+//       new workbox.expiration.Plugin({
+//         // cache requests for 30 days
+//         maxAgeSeconds: 30 * 24 * 60 * 60,
+//         // Only cache 20 requests.
+//         maxEntries: 40
+//       })
+//     ]
+//   })
+// );
