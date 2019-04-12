@@ -1,13 +1,10 @@
 <script type="module">
-import {Workbox} from 'https://storage.googleapis.com/workbox-cdn/releases/4.2.0/workbox-window.prod.mjs';
-
 if ('serviceWorker' in navigator) {
-    // SW Registration
-    const wb = new Workbox('/service-worker.js')
-    wb.register()
-
-    // cache the offline page when the page loads
     window.addEventListener('load', () => {
+        // SW Registration
+        navigator.serviceWorker.register('/service-worker.js')
+
+        // cache the offline page when the page loads
         caches.open('govuk-ds-saved-pages').then(cache => {
             // always add an updated version of the offline page
             cache.add('/offline/index.html');
@@ -87,5 +84,54 @@ if ('serviceWorker' in navigator) {
             })
         }
     })
+
+    var ConnectionStatus = (function () {
+        var messageWrapper
+
+        function init () {
+            // generate the message wrapper
+            messageWrapper = document.createElement('div')
+            messageWrapper.style.cssText = 'position:fixed; bottom:0; right: 0; display:none; z-index: 10;'
+            messageWrapper.className = 'govuk-tag app-tag--review govuk-message-wrapper'
+
+            // append the wrapper to the page
+            document.body.appendChild(messageWrapper)
+        }
+
+        var showMessage = function (message) {
+            messageWrapper.innerHTML = message
+            messageWrapper.style.display = 'block'
+        }
+
+        var hideMessage = function () {
+            messageWrapper.innerHTML = ''
+            messageWrapper.style.display = 'none'
+        }
+
+        var update = function () {
+            if (navigator.onLine) { // online
+                // hide the message
+                hideMessage()
+            } else { // offline
+                showMessage('Offline')
+            }
+        }
+
+        // initialise the module
+        init()
+
+        // expose methods publicly
+        return {
+            update: update
+        }
+    }())
+
+    // Check see if page is already offline
+    ConnectionStatus.update();
+
+    // trigger the connection state events
+    window.addEventListener('online', ConnectionStatus.update)
+    window.addEventListener('offline', ConnectionStatus.update)
+
 }
 </script>

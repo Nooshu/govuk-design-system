@@ -1,6 +1,9 @@
 // Import from the CDN
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/4.2.0/workbox-sw.js');
 
+// explicitly load the workbox modules being used
+workbox.loadModule('workbox-cacheable-response');
+
 const savedPageCache = 'govuk-ds-saved-pages';
 const offlinePage = '/offline/index.html';
 
@@ -17,7 +20,7 @@ workbox.core.skipWaiting()
 workbox.core.clientsClaim()
 
 // place holder for any precaching
-workbox.precaching.precacheAndRoute([]);
+workbox.precaching.precacheAndRoute([], {});
 
 // Use workbox for the handling of static assets
 workbox.routing.registerRoute(
@@ -87,14 +90,3 @@ async function stashInCache(request, cacheName) {
   // push the response into the cache and return the outcome
   return await openCache.put(request, theRequest);
 }
-
-/**
- * // check for pathname that doesn't end in a '/' doesn't have a '.' (an extension)
-    if (url.pathname && !url.pathname.endsWith('/') && !url.pathname.includes('.')) {
-      console.warn('Rewriting!', url.pathname)
-      // if so rewrite the path to include slash
-      url['pathname'] = url['pathname'] + '/index.html'
-      return [url]
-    }
-    return []
- */
