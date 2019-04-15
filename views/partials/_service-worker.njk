@@ -15,17 +15,20 @@ if ('serviceWorker' in navigator) {
     caches.match(window.location.href)
     .then(isPageInCache => {
         const insertPoint = document.querySelector('div.app-content__header')
-        const offlineButton = document.createElement('button')
-        offlineButton.className = `govuk-button`;
-        offlineButton.innerText = isPageInCache ? `Remove from cache` : `Save for offline reading`;
+        const offlineCTA = document.createElement('a')
+        offlineCTA.className = `govuk-!-font-size-16 govuk-link`;
+        offlineCTA.href = "#";
+        offlineCTA.innerText = isPageInCache ? `Remove from cache` : `Save for offline reading`;
 
         if(insertPoint){
             if(window.location.href.includes('/offline/')){return;}
-            insertPoint.prepend(offlineButton)
+            insertPoint.appendChild(offlineCTA);
 
-            offlineButton.addEventListener('click', event => {
+            insertPoint.querySelector('h1').className += " govuk-!-margin-bottom-1";
+
+            offlineCTA.addEventListener('click', event => {
                 event.preventDefault()
-                offlineButton.innerText = `One moment please...`
+                offlineCTA.innerText = `One moment please...`
 
                 if(isPageInCache){
                     caches.open('govuk-ds-saved-pages')
@@ -33,7 +36,9 @@ if ('serviceWorker' in navigator) {
                         isPageInCache = false;
                         let iframeArray = JSON.parse(localStorage.getItem(window.location.href)).iframes;
                         localStorage.removeItem(window.location.href)
-                        offlineButton.innerText = `Save for offline reading`
+                        offlineCTA.innerText = `Save for offline reading`
+                        // force the clicked link to unblur
+                        document.activeElement.blur();
                         return cacheName.delete(window.location.href)
                             .then(() => {
                                 return Promise.all(iframeArray.map(iframe => {
@@ -76,7 +81,9 @@ if ('serviceWorker' in navigator) {
                                 JSON.stringify(documentData)
                             )
 
-                            offlineButton.innerText = `Page Saved!`
+                            offlineCTA.innerText = `Page Saved!`
+                            // force the clicked link to unblur
+                            document.activeElement.blur();
                             isPageInCache = true
                         })
                     })
