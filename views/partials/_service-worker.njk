@@ -16,9 +16,10 @@ if ('serviceWorker' in navigator) {
     .then(isPageInCache => {
         const insertPoint = document.querySelector('div.app-content__header')
         const offlineCTA = document.createElement('a')
-        offlineCTA.className = `govuk-!-font-size-16 govuk-link`;
+        offlineCTA.className = `govuk-!-font-size-16 govuk-!-margin-bottom-2 govuk-link`;
         offlineCTA.href = "#";
-        offlineCTA.innerText = isPageInCache ? `Remove from cache` : `Save for offline reading`;
+        offlineCTA.innerText = isPageInCache ? `Remove from cache` : `Save for reading offline`;
+        offlineCTA.style.display = "block";
 
         if(insertPoint){
             if(window.location.href.includes('/offline/')){return;}
@@ -36,7 +37,7 @@ if ('serviceWorker' in navigator) {
                         isPageInCache = false;
                         let iframeArray = JSON.parse(localStorage.getItem(window.location.href)).iframes;
                         localStorage.removeItem(window.location.href)
-                        offlineCTA.innerText = `Save for offline reading`
+                        offlineCTA.innerText = `Save for reading offline`
                         // force the clicked link to unblur
                         document.activeElement.blur();
                         return cacheName.delete(window.location.href)
