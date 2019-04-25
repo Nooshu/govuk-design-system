@@ -21,13 +21,26 @@ if ('serviceWorker' in navigator) {
         offlineCTA.innerText = isPageInCache ? `Remove from cache` : `Save for reading offline`;
         offlineCTA.style.display = "block";
 
-        if(insertPoint){
+        // if the page is in the cache, and network is online, try to update the page
+        if(isPageInCache && navigator.onLine){
+            // update the original page from the network
+            caches.open('govuk-ds-saved-pages')
+            .then(openCache => {
+                console.info('Page updating');
+                // store the page meta and the iframes
+                storePageMetaAndIframes(openCache)
+            });
+        }
+
+        // check for the insert point on the page, and if user is currently online (stop a user removing from cache when offline)
+        if(insertPoint && navigator.onLine){
             // check see if we are on the offline page, if we are return
             if(typeof insertPoint.dataset.offlinepage !== 'undefined'){return;}
             insertPoint.appendChild(offlineCTA);
 
             insertPoint.querySelector('h1').className += " govuk-!-margin-bottom-1";
 
+            // add the click event to the offline button
             offlineCTA.addEventListener('click', event => {
                 event.preventDefault()
                 offlineCTA.innerText = `One moment please...`
@@ -41,11 +54,17 @@ if ('serviceWorker' in navigator) {
                         offlineCTA.innerText = `Save for reading offline`
                         // force the clicked link to unblur
                         document.activeElement.blur();
+                        // delete the page from the cache
                         return cacheName.delete(window.location.href)
                             .then(() => {
-                                return Promise.all(iframeArray.map(iframe => {
-                                    return cacheName.delete(iframe);
-                                }))
+                                // if we have stored an array of iframes associated with the page, delete them from the cache
+                                if(iframeArray){
+                                    return Promise.all(iframeArray.map(iframe => {
+                                        return cacheName.delete(iframe);
+                                    }))
+                                }
+
+                                return;
                             });
                     })
                 } else {
@@ -53,35 +72,7 @@ if ('serviceWorker' in navigator) {
                     .then(openCache => {
                         openCache.add(window.location.href)
                         .then(() => {
-                            let pageIframes = document.getElementsByTagName('iframe');
-                            // check see if we have iframes on the page
-                            if(pageIframes.length){
-                                // convert to a real array
-                                pageIframes = Array.from(pageIframes)
-                                    // map over iframs to get their src attributes
-                                    .map(iframe => iframe.getAttribute('src'));
-
-                                // create an array of unique values (any duplicates throw a DOMException)
-                                var uniqueUrls = [...new Set(pageIframes)];
-                                
-                                // add the iframes to the cache
-                                openCache.addAll(uniqueUrls).then(result => {
-                                    return result;
-                                }).catch(error => {
-                                    console.warn(error);
-                                });
-                            }
-
-                            const documentData = {
-                                'title': document.querySelector('title').innerText,
-                                'description': document.querySelector('meta[name="description"]').getAttribute('content'),
-                                'iframes': uniqueUrls
-                            }
-
-                            localStorage.setItem(
-                                window.location.href,
-                                JSON.stringify(documentData)
-                            )
+                            storePageMetaAndIframes(openCache);
 
                             offlineCTA.innerText = `Page Saved!`
                             // force the clicked link to unblur
@@ -93,6 +84,38 @@ if ('serviceWorker' in navigator) {
             })
         }
     })
+
+    function storePageMetaAndIframes(openCache){
+        let pageIframes = document.getElementsByTagName('iframe');
+        // check see if we have iframes on the page
+        if(pageIframes.length){
+            // convert to a real array
+            pageIframes = Array.from(pageIframes)
+                // map over iframs to get their src attributes
+                .map(iframe => iframe.getAttribute('src'));
+
+            // create an array of unique values (any duplicates throw a DOMException)
+            var uniqueUrls = [...new Set(pageIframes)];
+            
+            // add the iframes to the cache
+            openCache.addAll(uniqueUrls).then(result => {
+                return result;
+            }).catch(error => {
+                console.warn(error);
+            });
+        }
+
+        const documentData = {
+            'title': document.querySelector('title').innerText,
+            'description': document.querySelector('meta[name="description"]').getAttribute('content'),
+            'iframes': uniqueUrls
+        }
+
+        localStorage.setItem(
+            window.location.href,
+            JSON.stringify(documentData)
+        )
+    }
 
     var ConnectionStatus = (function () {
         var messageWrapper
