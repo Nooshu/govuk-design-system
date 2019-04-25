@@ -22,7 +22,8 @@ if ('serviceWorker' in navigator) {
         offlineCTA.style.display = "block";
 
         if(insertPoint){
-            if(window.location.href.includes('/offline/')){return;}
+            // check see if we are on the offline page, if we are return
+            if(typeof insertPoint.dataset.offlinepage !== 'undefined'){return;}
             insertPoint.appendChild(offlineCTA);
 
             insertPoint.querySelector('h1').className += " govuk-!-margin-bottom-1";
