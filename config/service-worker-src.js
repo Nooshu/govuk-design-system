@@ -1,6 +1,8 @@
 // Import from the CDN
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/4.2.0/workbox-sw.js');
 
+workbox.setConfig({ debug: false });
+
 // explicitly load the workbox modules being used
 workbox.loadModule('workbox-cacheable-response');
 
@@ -56,12 +58,13 @@ addEventListener('fetch', fetchEvent =>{
     // respond to the request with the code inside
     fetchEvent.respondWith(
       // look for the HTML in ANY of the caches
-      caches.match(request)
+      caches.match(request, { cacheName: savedPageCache })
       .then(cacheResponse => {
         // if we have a cached version of the page
         if (cacheResponse){
           // try to update the cached version from the network
           fetchEvent.waitUntil(
+            // update the cached version, then message the page
             stashInCache(request, savedPageCache)
           );
           // whatever happens, return the cached version
@@ -72,7 +75,7 @@ addEventListener('fetch', fetchEvent =>{
         return fetch(request)
         // no network so serve the offline page
         .catch(error => {
-          return caches.match(offlinePage)
+          return caches.match(offlinePage, {cacheName: savedPageCache})
         })
       })
     )
@@ -84,9 +87,30 @@ addEventListener('fetch', fetchEvent =>{
  */
 async function stashInCache(request, cacheName) {
   // grab the request from the network
-  const theRequest = await fetch(request);
+  const response = await fetch(request);
   // open the cache
   const openCache = await caches.open(cacheName);
   // push the response into the cache and return the outcome
-  return await openCache.put(request, theRequest);
+  return await openCache.put(request, response.clone()).then(() => {
+    // return the response from the update
+    return response;
+  });
 }
+
+/**
+ * Let the browser know there's an updated version of the page
+ * if a user has stored it in the cache
+ */
+// function messagePage(response) {
+//   return self.clients.matchAll().then(function (clients) {
+//     clients.forEach(function (client) {
+//       var message = {
+//         type: 'refresh',
+//         url: response.url,
+//         eTag: response.headers.get('ETag')
+//       };
+
+//       client.postMessage(message);
+//     });
+//   });
+// }

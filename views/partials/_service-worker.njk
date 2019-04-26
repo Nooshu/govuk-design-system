@@ -1,14 +1,22 @@
 <script type="module">
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // SW Registration
-        navigator.serviceWorker.register('/service-worker.js')
+    // SW Registration
+    navigator.serviceWorker.register('/service-worker.js');
 
-        // cache the offline page when the page loads
-        caches.open('govuk-ds-saved-pages').then(cache => {
-            // always add an updated version of the offline page
-            cache.add('/offline/index.html');
-        })
+    // listen out for a message from the service worker
+    navigator.serviceWorker.addEventListener('message', (evt) => {
+        // if we get this event, an updated version now sits in the cache
+        //if(event.data.type == 'refresh'){
+            //console.info(`Updated version of ${event.data.url} found. Reloading the page.`);
+            // so refresh the page
+            //window.location.reload();
+        //}
+    });
+
+    // cache the offline page when the page loads
+    caches.open('govuk-ds-saved-pages').then(cache => {
+        // always add an updated version of the offline page
+        cache.add('/offline/index.html');
     });
 
     // Check see if the page has already been saved
@@ -20,17 +28,6 @@ if ('serviceWorker' in navigator) {
         offlineCTA.href = "#";
         offlineCTA.innerText = isPageInCache ? `Remove from cache` : `Save for reading offline`;
         offlineCTA.style.display = "block";
-
-        // if the page is in the cache, and network is online, try to update the page
-        if(isPageInCache && navigator.onLine){
-            // update the original page from the network
-            caches.open('govuk-ds-saved-pages')
-            .then(openCache => {
-                console.info('Page updating');
-                // store the page meta and the iframes
-                storePageMetaAndIframes(openCache)
-            });
-        }
 
         // check for the insert point on the page, and if user is currently online (stop a user removing from cache when offline)
         if(insertPoint && navigator.onLine){
@@ -82,6 +79,7 @@ if ('serviceWorker' in navigator) {
                     })
                 }
             })
+            
         }
     })
 
@@ -164,6 +162,5 @@ if ('serviceWorker' in navigator) {
     // trigger the connection state events
     window.addEventListener('online', ConnectionStatus.update)
     window.addEventListener('offline', ConnectionStatus.update)
-
 }
 </script>
